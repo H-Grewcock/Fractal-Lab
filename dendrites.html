@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Dendrites (DLA)</title>
+    <link rel="stylesheet" href="css/styles.css"/>
+
+    <style>
+        .tool-shell {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--r-md);
+            box-shadow: var(--shadow2);
+            overflow: hidden;
+        }
+
+        .tool-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--line);
+            background: var(--nav-bg);
+            backdrop-filter: var(--nav-blur);
+        }
+
+        .tool-title {
+            display: grid;
+            gap: 2px;
+        }
+        .tool-title h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 780;
+            letter-spacing: 0.2px;
+        }
+        .tool-title .hintline {
+            margin: 0;
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.35;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 0;
+            min-height: 560px;
+        }
+        @media (max-width: 940px) {
+            .tool-grid { grid-template-columns: 1fr; }
+        }
+
+        .canvas-area {
+            padding: 12px;
+            background: transparent;
+            border-right: 1px solid var(--line);
+        }
+        @media (max-width: 940px) {
+            .canvas-area {
+                border-right: none;
+                border-bottom: 1px solid var(--line);
+            }
+        }
+
+        .panel {
+            padding: 12px;
+            background: var(--surface);
+            max-height: calc(100vh - 220px);
+            overflow: auto;
+        }
+        @media (max-width: 940px) {
+            .panel { max-height: none; }
+        }
+
+        .panel-title { font-weight: 750; margin-bottom: 10px; }
+        .control { display: grid; gap: 6px; margin-top: 10px; }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .actions .wide { grid-column: 1 / -1; }
+
+        .hintline {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+
+        .canvas-wrap {
+            position: relative;
+            border-radius: var(--r-md);
+            overflow: hidden;
+            border: 1px solid var(--line2);
+            background: var(--surface);
+        }
+
+        #dendriteCanvas {
+            display: block;
+            width: 100%;
+            height: 72vh;
+            max-height: 680px;
+        }
+        @media (max-width: 940px) {
+            #dendriteCanvas { height: 56vh; max-height: 560px; }
+        }
+
+        .hud {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            display: grid;
+            gap: 6px;
+            pointer-events: none;
+        }
+
+        .mono-pill {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text);
+            background: color-mix(in srgb, var(--surface) 78%, transparent);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 6px 10px;
+            box-shadow: var(--shadow2);
+        }
+
+        details.advanced {
+            margin-top: 14px;
+            border-top: 1px solid var(--line2);
+            padding-top: 12px;
+        }
+        details.advanced summary {
+            cursor: pointer;
+            user-select: none;
+            font-weight: 650;
+            color: var(--muted);
+            list-style: none;
+        }
+        details.advanced summary::-webkit-details-marker { display: none; }
+
+        .dim-box {
+            margin-top: 14px;
+            border-top: 1px solid var(--line2);
+            padding-top: 12px;
+        }
+        .dim-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 940px) { .dim-row { grid-template-columns: 1fr; } }
+
+        .dim-readout {
+            margin-top: 8px;
+            padding: 10px;
+            border-radius: var(--r-md);
+            border: 1px solid var(--line2);
+            background: color-mix(in srgb, var(--surface) 84%, transparent);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="nav-container" role="navigation" aria-label="Primary navigation"></div>
+
+    <main class="page">
+        <header class="page-head">
+        <h1>Dendrites</h1>
+        <p class="hint">Diffusion-limited aggregation. Wheel zoom &bull; Drag pan &bull; Step for comprehension.</p>
+        </header>
+
+        <section class="tool-shell">
+        <div class="tool-topbar">
+            <div class="tool-title">
+            <h2>Diffusion-Limited Aggregation (DLA)</h2>
+            <p class="hintline">Random walkers stick to the cluster -> branching growth.</p>
+            </div>
+
+            <div class="mono" id="statusReadout" aria-live="polite">Stuck: 1 | Walkers: 400</div>
+        </div>
+
+        <div class="tool-grid">
+            <div class="canvas-area graph-paper">
+            <div class="canvas-wrap" id="canvasWrap">
+                <canvas id="dendriteCanvas" aria-label="Dendrite visualisation"></canvas>
+
+                <div class="hud" aria-hidden="true">
+                <div id="mouse-coords" class="mono-pill">X: 0.00, Y: 0.00</div>
+                <div id="zoom-indicator" class="mono-pill">Zoom: 1.00x</div>
+                </div>
+            </div>
+
+            </div>
+
+            <aside class="panel" aria-label="Dendrite controls">
+            <div class="panel-title mono">Controls</div>
+
+            <div class="control">
+                <label for="simRes">Sim Resolution (px)</label>
+                <input id="simRes" type="number" min="200" max="1800" step="50" value="700" />
+            </div>
+
+            <div class="control">
+                <label for="walkerCount">Walkers</label>
+                <input id="walkerCount" type="number" min="20" max="2000" step="10" value="400" />
+            </div>
+
+            <div class="control">
+                <label for="stepsPerFrame">Steps / frame</label>
+                <input id="stepsPerFrame" type="number" min="1" max="1000" step="1" value="250" />
+            </div>
+
+            <div class="control">
+                <label for="stickProb">Stick probability</label>
+                <input id="stickProb" type="number" min="0" max="1" step="0.01" value="1" />
+            </div>
+
+            <div class="control">
+                <label for="spawnRadius">Max spawn radius</label>
+                <input id="spawnRadius" type="number" min="0.2" max="2.0" step="0.05" value="0.9" />
+            </div>
+
+            <div class="control">
+                <label for="killRadius">Kill radius (world)</label>
+                <input id="killRadius" type="number" min="0.3" max="3.0" step="0.05" value="1.15" />
+            </div>
+
+            <div class="control">
+                <label for="colorChangeRate">Colour change rate</label>
+                <input id="colorChangeRate" type="range" min="0" max="4" step="0.01" value="0.35" />
+            </div>
+
+            <div class="control">
+                <label for="seedMode">Seed</label>
+                <select id="seedMode">
+                    <option value="center" selected>Centre dot</option>
+                    <option value="line">Horizontal line</option>
+                    <option value="cross">Cross</option>
+                </select>
+            </div>
+
+            <details class="advanced">
+                <summary>Display</summary>
+
+                <div class="control">
+                    <label><input type="checkbox" id="showWalkers" checked /> Show moving walkers</label>
+                    <label><input type="checkbox" id="showArrows" /> Show motion arrows</label>
+                    <label><input type="checkbox" id="showGrid" /> Show grid</label>
+                </div>
+
+                <div class="control">
+                    <label for="walkerAlpha">Walker opacity</label>
+                    <input id="walkerAlpha" type="range" min="0" max="1" step="0.01" value="0.75" />
+                </div>
+
+                <div class="control">
+                    <label for="walkerStep">Walker step (cells)</label>
+                    <input id="walkerStep" type="number" min="1" max="8" step="1" value="1" />
+                </div>
+            </details>
+
+            <div class="actions">
+                <button id="togglePlay" type="button" class="btn-primary wide">Play</button>
+                <button id="stepOnce" type="button">Step</button>
+                <button id="resetSim" type="button">Reset</button>
+                <button id="exportPNG" type="button" class="wide">Export PNG</button>
+            </div>
+            
+            <details class="advanced dim-box">
+                <summary>Dimension</summary>
+
+                <div class="dim-row">
+                    <div class="control">
+                        <label for="dimMode">Mask</label>
+                        <select id="dimMode">
+                        <option value="ink" selected>Ink (filled)</option>
+                        <option value="boundary">Boundary (edges)</option>
+                        </select>
+                    </div>
+                    <div class="control">
+                        <label for="dimDownsample">Downsample</label>
+                        <input id="dimDownsample" type="number" min="128" max="2048" step="64" value="768" />
+                    </div>
+                </div>
+
+                <div class="dim-row">
+                    <div class="control">
+                        <label for="dimMinBox">Min box</label>
+                        <input id="dimMinBox" type="number" min="1" max="32" value="2" />
+                    </div>
+                    <div class="control">
+                        <label for="dimMaxBox">Max box</label>
+                        <input id="dimMaxBox" type="number" min="8" max="1024" value="256" />
+                    </div>
+                </div>
+
+                <div class="control">
+                    <label for="dimSamples">Samples</label>
+                    <input id="dimSamples" type="number" min="6" max="40" value="12" />
+                </div>
+
+                <div class="actions">
+                <button id="dimRunBtn" type="button" class="wide">Estimate dimension</button>
+                </div>
+
+                <div class="dim-readout">
+                <div class="mono"><span style="opacity:.7;">D approx</span> <span id="dimValue">-</span></div>
+                <div class="hintline" id="dimMeta" style="margin-top:4px;">Box-counting on bitmap.</div>
+                </div>
+            </details>
+
+            </aside>
+        </div>
+        </section>
+    </main>
+
+    <div id="footer-container" role="contentinfo"></div>
+
+    <script type="module">
+        import { initBasePage } from "./js/pages/basePage.js";
+        initBasePage({ highlightNav: true }).catch(console.error);
+    </script>
+
+    <script type="module" src="js/pages/dendrites.js"></script>
+</body>
+
+</html>

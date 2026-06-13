@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Affine IFS Lab</title>
+    <link rel="stylesheet" href="css/styles.css"/>
+
+    <style>
+        .tool-shell {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--r-md);
+            box-shadow: var(--shadow2);
+            overflow: hidden;
+        }
+
+        .tool-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--line);
+            background: var(--nav-bg);
+            backdrop-filter: var(--nav-blur);
+        }
+
+        .tool-title {
+            display: grid;
+            gap: 2px;
+        }
+
+        .tool-title h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 780;
+            letter-spacing: 0.2px;
+        }
+
+        .tool-title .hintline {
+            margin: 0;
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.35;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 0;
+            min-height: 560px;
+        }
+
+        @media (max-width: 940px) {
+            .tool-grid { grid-template-columns: 1fr; }
+        }
+
+        .canvas-area {
+            padding: 12px;
+            background: transparent;
+            border-right: 1px solid var(--line);
+        }
+
+        @media (max-width: 940px) {
+            .canvas-area {
+                border-right: none;
+                border-bottom: 1px solid var(--line);
+            }
+        }
+
+        .panel {
+            padding: 12px;
+            background: var(--surface);
+            max-height: calc(100vh - 220px);
+            overflow: auto;
+        }
+        @media (max-width: 940px) {
+            .panel { max-height: none; }
+        }
+
+        .panel-title { font-weight: 750; margin-bottom: 10px; }
+        .control { display: grid; gap: 6px; margin-top: 10px; }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .actions .wide { grid-column: 1 / -1; }
+
+        .hintline {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+
+        .canvas-wrap {
+            position: relative;
+            border-radius: var(--r-md);
+            overflow: hidden;
+            border: 1px solid var(--line2);
+            background: var(--surface);
+        }
+
+        #affineCanvas {
+            display: block;
+            width: 100%;
+            height: 72vh;
+            max-height: 680px;
+            cursor: crosshair;
+        }
+        @media (max-width: 940px) {
+            #affineCanvas { height: 56vh; max-height: 560px; }
+        }
+
+        .hud {
+            position: absolute;
+            right: 12px;
+            bottom: 12px;
+            display: grid;
+            gap: 6px;
+            pointer-events: none;
+        }
+
+        .mono-pill {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 13px;
+            color: var(--ink);
+            background: color-mix(in srgb, var(--surface) 78%, transparent);
+            border: 1px solid var(--line2);
+            border-radius: 999px;
+            padding: 6px 10px;
+            box-shadow: var(--shadow2);
+        }
+
+        .split2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        @media (max-width: 940px) { .split2 { grid-template-columns: 1fr; } }
+
+        details.advanced {
+            margin-top: 14px;
+            border-top: 1px solid var(--line2);
+            padding-top: 12px;
+        }
+        details.advanced summary {
+            cursor: pointer;
+            user-select: none;
+            font-weight: 650;
+            color: var(--muted);
+            list-style: none;
+        }
+        details.advanced summary::-webkit-details-marker { display: none; }
+
+        .editor-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(78px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .editor-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(78px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .mini-label {
+            display: grid;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .mini-label input, .mini-label select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--line2);
+            border-radius: var(--r-sm);
+            background: var(--surface);
+            color: var(--ink);
+            font-size: 13px;
+        }
+
+        .tiny-btn {
+            padding: 8px 10px;
+            border: 1px solid var(--line2);
+            border-radius: var(--r-sm);
+            background: var(--surface);
+            color: var(--ink);
+            cursor: pointer;
+        }
+        .tiny-btn:hover { filter: brightness(0.98); }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .dim-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .diagnostics {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .diagnostic {
+            border: 1px solid var(--line2);
+            border-radius: var(--r-sm);
+            padding: 8px 10px;
+            background: color-mix(in srgb, var(--surface2) 72%, var(--surface));
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .diagnostic.warn {
+            border-color: color-mix(in srgb, #f59e0b 45%, var(--line));
+            background: color-mix(in srgb, #f59e0b 12%, var(--surface));
+            color: var(--ink);
+        }
+
+        .diagnostic.danger {
+            border-color: color-mix(in srgb, #ef4444 50%, var(--line));
+            background: color-mix(in srgb, #ef4444 12%, var(--surface));
+            color: var(--ink);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="nav-container" role="navigation" aria-label="Primary navigation"></div>
+
+    <main class="page">
+        <header class="page-head">
+            <h1>Affine IFS</h1>
+            <p class="hint">Wheel zoom &bull; Drag to pan &bull; Drag parallelogram corners to reshape a map</p>
+        </header>
+
+        <section class="tool-shell">
+            <div class="tool-topbar">
+                <div class="tool-title">
+                    <h2>Chaos Game + draggable affine maps</h2>
+                    <p class="hintline">Each map is shown as a parallelogram: b, b+c1, b+c2, b+c1+c2</p>
+                </div>
+
+                <div class="mono" id="statusReadout" aria-live="polite">
+                    Maps: 3 &bull; Points: 10000
+                </div>
+            </div>
+
+            <div class="tool-grid">
+                <div class="canvas-area graph-paper">
+                <div class="canvas-wrap">
+                    <canvas id="affineCanvas" width="800" height="800" aria-label="Affine IFS canvas"></canvas>
+
+                    <div class="hud" aria-hidden="true">
+                    <div id="mouse-coords" class="mono-pill">X: 0.00, Y: 0.00</div>
+                    <div id="zoom-indicator" class="mono-pill">Zoom: 1.00x</div>
+                    </div>
+                </div>
+
+                <div class="hintline" style="margin-top:10px;">
+                    Drag corners: <span class="mono">b</span> moves (translation),
+                    <span class="mono">b+c1</span> changes column 1,
+                    <span class="mono">b+c2</span> changes column 2,
+                    <span class="mono">b+c1+c2</span> changes both (Shift toggles which column is preserved).
+                </div>
+                </div>
+
+                <aside class="panel" aria-label="Affine controls">
+                <div class="panel-title mono">Controls</div>
+
+                <div class="control">
+                    <label class="mini-label">Examples
+                    <select id="exampleSelector">
+                        <option value="">-- Select Example --</option>
+                        <option value="Barnsley Fern">Barnsley Fern</option>
+                        <option value="Spiral">Spiral</option>
+                        <option value="Shrinking Square">Shrinking Square</option>
+                        <option value="Sierpinski Triangle">Sierpinski Triangle</option>
+                        <option value="Sierpinski Carpet">Sierpinski Carpet</option>
+                        <option value="Pentagon Star">Pentagon Star</option>
+                    </select>
+                    </label>
+                </div>
+
+                <div class="control">
+                    <div class="split2">
+                    <label class="mini-label">Maps
+                        <input type="number" id="mapCount" value="3" min="1" max="10" />
+                    </label>
+                    <label class="mini-label">Points
+                        <input type="number" id="numPoints" value="10000" min="100" step="100" />
+                    </label>
+                    </div>
+                </div>
+
+                <details class="advanced">
+                    <summary>Affine parameters (Ax + b)</summary>
+
+                    <div id="matrixAInputsContainer" aria-label="Matrix A inputs"></div>
+                    <div id="vectorBInputsContainer" aria-label="Vector b inputs"></div>
+                </details>
+
+                <details class="advanced">
+                    <summary>Probabilities</summary>
+                    <div class="control">
+                    <label class="mini-label">Mode
+                        <select id="probabilityMode">
+                        <option value="equal">Equal probabilities</option>
+                        <option value="spectral">Spectral norm probabilities</option>
+                        <option value="custom" selected>Custom probabilities</option>
+                        </select>
+                    </label>
+                    </div>
+                    <div id="probabilitiesContainer" aria-label="Probability per map"></div>
+                </details>
+
+                <details class="advanced">
+                    <summary>Contraction checks</summary>
+                    <div id="contractionWarnings" class="diagnostics" aria-live="polite"></div>
+                </details>
+
+                <div class="actions">
+                    <button id="generateAffine" type="button" class="btn-primary wide">Draw</button>
+                    <button id="resetAffine" type="button">Reset view</button>
+                    <button id="exportAffine" type="button">Export PNG</button>
+                    <button id="clearSteps" type="button">Clear steps</button>
+                </div>
+
+                <details class="advanced">
+                    <summary>Animation</summary>
+                    <div class="actions">
+                    <button id="stepOnce" type="button">Step once</button>
+                    <button id="toggleAnimation" type="button">Play</button>
+                    </div>
+                </details>
+
+                <details class="advanced">
+                    <summary>Dimension</summary>
+
+                    <div class="control">
+                    <label class="mini-label">Mask mode
+                        <select id="dimMode">
+                        <option value="ink" selected>Ink (filled)</option>
+                        <option value="boundary">Boundary only</option>
+                        </select>
+                    </label>
+                    </div>
+
+                    <div class="control">
+                    <label class="mini-label">Downsample (px)
+                        <input id="dimDownsample" type="number" min="128" max="2048" step="64" value="768" />
+                    </label>
+                    </div>
+
+                    <div class="control">
+                    <div class="dim-row">
+                        <label class="mini-label">Min box
+                        <input id="dimMinBox" type="number" min="1" max="128" step="1" value="2" />
+                        </label>
+                        <label class="mini-label">Max box
+                        <input id="dimMaxBox" type="number" min="2" max="512" step="1" value="256" />
+                        </label>
+                    </div>
+                    </div>
+
+                    <div class="control">
+                    <label class="mini-label">Samples
+                        <input id="dimSamples" type="number" min="6" max="30" step="1" value="12" />
+                    </label>
+                    </div>
+
+                    <div class="actions">
+                    <button id="dimRunBtn" type="button" class="wide">Estimate dimension</button>
+                    </div>
+
+                    <div class="hintline">
+                    D approx <span class="mono" id="dimValue">-</span><br/>
+                    <span class="mono" id="dimMeta"></span>
+                    </div>
+                </details>
+
+                </aside>
+            </div>
+            </section>
+
+    </main>
+
+    <div id="footer-container" role="contentinfo"></div>
+
+    <script type="module">
+        import { initBasePage } from "./js/pages/basePage.js";
+        initBasePage({ highlightNav: true }).catch(console.error);
+    </script>
+
+    <script type="module" src="js/pages/affine.js"></script>
+</body>
+
+</html>
