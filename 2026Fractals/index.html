@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-light">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Fractal Lab</title>
+    <link rel="stylesheet" href="css/styles.css"/>
+</head>
+
+<body class="home">
+    <div id="nav-container" role="navigation" aria-label="Primary navigation"></div>
+
+    <main class="page">
+        <header class="hero">
+            <div class="hero-copy">
+                <div class="mono eyebrow">Interactive mathematics</div>
+                <h1>Fractal Lab</h1>
+                <p class="hero-sub">
+                    Explore fractals through live canvases, adjustable parameters, and
+                    linked views for iterative geometry, growth, and complex dynamics.
+                </p>
+
+                <div class="hero-actions" aria-label="Featured labs">
+                    <a class="button-link" href="affine.html">Start with affine maps</a>
+                    <a class="button-link button-link-ghost" href="complex.html">Open complex lab</a>
+                </div>
+            </div>
+
+            <div class="hero-panel" aria-label="Lab overview">
+                <div class="hero-stat">
+                    <span class="hero-stat-value">8</span>
+                    <span class="hero-stat-label">interactive labs</span>
+                </div>
+                <div class="hero-stat">
+                    <span class="hero-stat-value">2D/3D</span>
+                    <span class="hero-stat-label">visual exploration</span>
+                </div>
+                <div class="hero-stat">
+                    <span class="hero-stat-value">PNG</span>
+                    <span class="hero-stat-label">canvas exports</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="section-block">
+            <div class="section-head">
+                <div>
+                    <p class="section-kicker">General sections</p>
+                    <h2>Choose a lab</h2>
+                </div>
+                <p class="hint">Each section opens a focused workspace with controls, canvas tools, and examples.</p>
+            </div>
+
+            <div class="card-grid">
+                <a class="card card-feature" href="complex.html">
+                    <div class="card-meta">Complex Dynamics</div>
+                    <div class="card-title">Complex Lab</div>
+                    <div class="card-sub">Explore Mandelbrot and Julia sets with linked plane views.</div>
+                </a>
+
+                <a class="card" href="newtonMethod.html">
+                    <div class="card-meta">Complex Dynamics</div>
+                    <div class="card-title">Newton Method</div>
+                    <div class="card-sub">Map basins of attraction and compare convergence behaviour.</div>
+                </a>
+
+                <a class="card card-feature" href="affine.html">
+                    <div class="card-meta">Affine &amp; IFS</div>
+                    <div class="card-title">Affine Maps</div>
+                    <div class="card-sub">Shape affine maps directly with draggable geometric handles.</div>
+                </a>
+
+                <a class="card" href="ifs.html">
+                    <div class="card-meta">Affine &amp; IFS</div>
+                    <div class="card-title">IFS</div>
+                    <div class="card-sub">Render self-similar sets with chaos game and deterministic modes.</div>
+                </a>
+                
+                <a class="card" href="curves.html">
+                    <div class="card-meta">Curves</div>
+                    <div class="card-title">Curves Lab</div>
+                    <div class="card-sub">Build Koch, Dragon, Hilbert, Peano, and related constructions.</div>
+                </a>
+
+                <a class="card" href="planeIts.html">
+                    <div class="card-meta">Plane Iterations</div>
+                    <div class="card-title">Plane Iterations</div>
+                    <div class="card-sub">Explore iterated maps, phase portraits, and attractors in R^2.</div>
+                </a>
+
+                <a class="card" href="dendrites.html">
+                    <div class="card-meta">Stochastic Growth</div>
+                    <div class="card-title">Dendrites</div>
+                    <div class="card-sub">Generate diffusion-limited aggregation with controllable parameters.</div>
+                </a>
+
+                <a class="card" href="3DFractals.html">
+                    <div class="card-meta">3D Fractals</div>
+                    <div class="card-title">3D Fractals</div>
+                    <div class="card-sub">Explore polyhedral, sponge, and higher-dimensional constructions.</div>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer-container" role="contentinfo"></div>
+
+    <script type="module">
+        import { initBasePage } from "./js/pages/basePage.js";
+        initBasePage({ highlightNav: false }).catch(console.error);
+    </script>
+</body>
+</html>
