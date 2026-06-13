@@ -464,6 +464,8 @@ button:active { transform: translateY(1px); }
 
 /* Canvas */
 canvas {
+    position: relative;
+    z-index: 2;
     background: var(--canvas);
     border: 1px solid var(--line);
     border-radius: var(--r-md);
@@ -791,14 +793,11 @@ footer {
 .footer-meta { color: var(--muted); font-size: 12px; }
 .dot { padding: 0 8px; }
 
-/* Ensure canvas area stays clickable */
+/* Ensure canvas area stays visible and clickable below the navbar */
 .canvas-area,
-.canvas-wrap { position: relative; z-index: 0; }
+.canvas-wrap { position: relative; z-index: 1; }
 
 .canvas-wrap canvas {
-    position: relative !important;
-    inset: auto !important;
-    z-index: 0;
     pointer-events: auto !important;
 }
 

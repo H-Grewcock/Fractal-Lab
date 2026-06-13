@@ -184,54 +184,10 @@ export function initThemeToggle() {
     });
 }
 
-// Function for hover-reveal navbar
-export function initHoverRevealNavbar({ revealZonePx = 18, hideDelayMs = 250 } = {}) {
+// Keep the navbar visible on every page.
+export function initHoverRevealNavbar() {
     const nav = document.querySelector(".nav");
     if (!nav) return;
-
-    // Prevents binding hover behaviour more than once
-    if (nav.dataset.hoverRevealBound === "1") return;
-    nav.dataset.hoverRevealBound = "1";
-
-    // Removes old hover tab if exists from before
     document.getElementById("navHoverTab")?.remove();
-
-    let hideTimer = null;
-
-    // Checks if mobile menu open
-    const isMenuOpen = () =>
-        document.getElementById("navLinks")?.classList.contains("visible");
-    // Shows navbar and cancels any pending hide
-    const reveal = () => {
-        clearTimeout(hideTimer);
-        nav.classList.add("nav--revealed");
-    };
-
-    // Hide navbar afer small delay, i.e. using hideDelayMs which controls how long the navbar waits before hiding again
-    const scheduleHide = () => {
-        clearTimeout(hideTimer);
-        hideTimer = setTimeout(() => {
-            if (isMenuOpen()) return;
-            nav.classList.remove("nav--revealed");
-        }, hideDelayMs);
-    };
-
-    // Reveals when mouse is over navbar:
-    nav.addEventListener("mouseenter", reveal);
-    nav.addEventListener("mouseleave", scheduleHide);
-    // Reveals when keyboard focus is inside navbar:
-    nav.addEventListener("focusin", reveal);
-    nav.addEventListener("focusout", scheduleHide);
-
-    // When mouse moves to top-edge of window, reveal:
-    document.addEventListener(
-        "mousemove",
-        (e) => {
-            if (e.clientY <= revealZonePx) reveal();
-        },
-        { passive: true }
-    );
-
-    // Navbar starts hidden
-    nav.classList.remove("nav--revealed");
+    nav.classList.add("nav--revealed");
 }
