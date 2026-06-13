@@ -5,7 +5,7 @@ An interactive web-based fractal visualisation project for exploring self-simila
 This project is designed for teaching, experimentation and mathematical exploration. Each sectio nuses live canvas-based visualisations with adjustable controls, allowing users to zoom, pan, change parameters, estimate dimension and export generated images.
 
 ## Live Demo
-[View the Fractal Visualiser] ()
+[View the Fractal Visualiser] (https://h-grewcock.github.io/Fractal-Lab/index.html)
 
 ## Features
 - Interactive fractal visuaslisations
@@ -125,12 +125,23 @@ Includes: "3DFractals.html"
 ## Running Locally
 The project uses JavaScript modules and dynamically loads shared components such as navbar and footer, therefore it should be run through a local server rather than opened directly as a file.
 
-Clone the repository: FILL IN
-FILL IN
+Clone the repository:
+
+```bash
+git clone https://github.com/h-grewcock/Fractal-Lab.git
+cd Fractal-Lab
+```
 
 Start a local server: python -m http.server 8000
 
 Then open: http://localhost:8000
+
+
+On Windows, if `python` does not work, use:
+
+```bash
+py -m http.server 8000
+```
 
 You can also use another local development server, such as VS Code Live Server extension.
 
