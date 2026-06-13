@@ -9,7 +9,7 @@ This project is designed for teaching, experimentation and mathematical explorat
 
 ## Features
 - Interactive fractal visuaslisations
-- Mandelr=brot and Julia set rendering and parameter exploration
+- Mandelbrot and Julia set rendering and parameter exploration
 - Newton method basin visualisation
 - Affine map and IFS construction tools
 - Fractal and space-filling curve generators
