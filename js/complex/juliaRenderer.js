@@ -179,5 +179,7 @@ export async function renderJulia({
     }
 
     // Grid overlay option
-    if (drawGrid) drawGridOverlay(ctx, W, H, 10);
+    if (drawGrid) {
+        drawGridOverlay(ctx, W, H, 10);
+    }
 }

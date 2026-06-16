@@ -3,6 +3,7 @@ import { qs, parseNumber } from "../shared/dom.js";
 import { View2D } from "../shared/view2D.js";
 import { exportCanvasPNG } from "../shared/exportMedia.js";
 import { DimensionLab } from "../shared/dimension/index.js";
+import { typesetMath } from "../shared/mathjax.js";
 
 const canvas = qs("#affineCanvas");
 const ctx = canvas.getContext("2d", { alpha: true });
@@ -1113,8 +1114,9 @@ function setDimReadout(result) {
     const r2 = result.fit?.r2;
     // Updates dimension readout after DimensionLab finishes
     UI.dimValue().textContent = result.dimension.toFixed(4);
-    UI.dimMeta().textContent 
-        = `${result.estimator}${Number.isFinite(r2) ? `, R2=${r2.toFixed(3)}` : ""}`;
+    UI.dimMeta().textContent
+        = `${result.estimator}${Number.isFinite(r2) ? `, \\(R^2=${r2.toFixed(3)}\\)` : ""}`;
+    typesetMath(UI.dimMeta());
 }
 
 // Function runs box-counting dimension estimation on current dendrite drawing

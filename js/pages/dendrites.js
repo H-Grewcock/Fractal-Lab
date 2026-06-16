@@ -3,6 +3,7 @@ import { qs, clamp, parseNumber } from "../shared/dom.js";
 import { View2D } from "../shared/view2D.js";
 import { exportCanvasPNG } from "../shared/exportMedia.js";
 import { DimensionLab } from "../shared/dimension/index.js";
+import { typesetMath } from "../shared/mathjax.js";
 
 const canvas = document.getElementById("dendriteCanvas");
 const ctx = canvas.getContext("2d", { alpha: true });
@@ -18,7 +19,9 @@ const els = {
     stickProb: document.getElementById("stickProb"),
     spawnRadius: document.getElementById("spawnRadius"),
     killRadius: document.getElementById("killRadius"),
+    colorScheme: document.getElementById("colorScheme"),
     colorChangeRate: document.getElementById("colorChangeRate"),
+    colorMeaning: document.getElementById("colorMeaning"),
     seedMode: document.getElementById("seedMode"),
 
     // Display controls
@@ -265,8 +268,105 @@ function setDimReadout(result) {
     const r2 = result.fit?.r2;
     // Updates dimension readout after DimensionLab finishes
     els.dimValue.textContent = result.dimension.toFixed(4);
-    els.dimMeta.textContent 
-        = `${result.estimator}${Number.isFinite(r2) ? `, R2=${r2.toFixed(3)}` : ""}`;
+    els.dimMeta.textContent
+        = `${result.estimator}${Number.isFinite(r2) ? `, \\(R^2=${r2.toFixed(3)}\\)` : ""}`;
+    typesetMath(els.dimMeta);
+}
+
+function mixRgb(a, b, t) {
+    // Clamps t so the blend stays between 0 and 1
+    const u = clamp01(t);
+
+    // Linearly interpolates each RGB channel
+    return {
+        r: Math.round(a.r + (b.r - a.r) * u),
+        g: Math.round(a.g + (b.g - a.g) * u),
+        b: Math.round(a.b + (b.b - a.b) * u),
+    };
+}
+
+function hexToRgb(hex, fallback = { r: 17, g: 24, b: 39 }) {
+    // Removes whitespace and any leading # from colour string
+    const clean = String(hex || "").trim().replace("#", "");
+    // Uses fallback if value not valid 6-digit hex colour
+    if (!/^[0-9a-fA-F]{6}$/.test(clean)) {
+        return fallback;
+    }
+
+    // Converts each pair of hex pair to RGB channel
+    return {
+        r: parseInt(clean.slice(0, 2), 16),
+        g: parseInt(clean.slice(2, 4), 16),
+        b: parseInt(clean.slice(4, 6), 16),
+    };
+}
+
+function getParticleColour(ix, iy) {
+    const scheme = els.colorScheme.value;               // Choosing colouring behaviour from UI
+    const rate = getFloat(els.colorChangeRate, 0.35);   // How quiclky hue changes
+
+    if (scheme === "single") {
+        // Main ink colour for all particles, depending on light/dark mode
+        return hexToRgb(getThemeColours().ink, { r: 17, g: 24, b: 39 });
+    }
+
+    if (scheme === "radius") {
+        // Converting grid coordinates -> world coordinates
+        const p = sim._gridToWorld(ix, iy);
+        // Measuring disance from central seed
+        const d = Math.hypot(p.x, p.y);
+        // Scales distance relative to spawn radius
+        const t = clamp01(d / Math.max(0.05, getFloat(els.spawnRadius, 0.9)));
+
+        // Blends blue near centre to amber farther out
+        return mixRgb(
+            { r: 37, g: 99, b: 235 }, 
+            { r: 245, g: 158, b: 11 }, 
+            t
+        );
+    }
+
+    if (scheme === "angle") {
+        // Converting grid coordinates -> world coordinates
+        const p = sim._gridToWorld(ix, iy);
+        // Converts particle angle around origin to hue value
+        const h = ((Math.atan2(p.y, p.x) / (Math.PI * 2)) + 1) % 1;
+
+        return hslToRgb(h, 0.72, 0.50);
+    }
+
+    if (scheme === "density") {
+        // Counting h9w many neighbouring cells already occupied
+        const neighbours = sim.countOccupiedNeighbours(ix, iy);
+        const t = neighbours / 8;   // Converts neighbour count to 0 to 1 blend amount
+
+        // Returns purple for sparse areas to green for crowded areas
+        return mixRgb(
+            { r: 124, g: 58, b: 237 }, 
+            { r: 34, g: 197, b: 94 }, 
+            t
+        );
+    }
+
+    // Defaulting age mode: shifts hue slightly each time particle sticks
+    hue = (hue + rate) % 360;
+
+    return hslToRgb((hue % 360) / 360, 0.72, 0.50);
+}
+
+function updateColourMeaning() {
+    // Explanation how each colour scheme works
+    const meanings = {
+        age: "Colour shows when each particle stuck: older near the seed, newer near the tips.",
+        radius: "Colour shows distance from the seed: blue near the centre, amber farther out.",
+        angle: "Colour shows branch direction around the seed, making directional symmetry visible.",
+        density: "Colour shows local crowding: purple at sparse tips, green in denser regions.",
+        single: "Colour uses the page ink colour so the dendrite reads as one solid structure.",
+    };
+
+    els.colorMeaning.textContent = meanings[els.colorScheme.value] || meanings.age;
+    // Colour-change-rate only matters for age colouring
+    els.colorChangeRate.disabled = els.colorScheme.value !== "age";
 }
 
 // Function runs box-counting dimension estiamtion on current dendrite drawing
@@ -348,16 +448,9 @@ function stepSimulation(stepsPerFrame) {
     sim.params.killRadius = Math.max(sim.params.spawnRadius + 0.05, killR);
     sim.params.walkerStepCells = walkerStepCells;
 
-    // Colour change rate per new stuck particle
-    const rate = getFloat(els.colorChangeRate, 0.35);
-    const hueStep = rate;
-
     // Advances simulation by given number of micro-steps
     for (let s = 0; s < stepsPerFrame; s++) {
-        const stuckThisStep = sim.step(() => {
-            hue = (hue + hueStep) % 360;
-            return hue;
-        });
+        const stuckThisStep = sim.step((ix, iy) => getParticleColour(ix, iy));
 
         // Only updates status when something is stuck
         if (stuckThisStep) updateStatus();
@@ -579,7 +672,7 @@ class DLASim {
     _flushImage() { this.sctx.putImageData(this.image, 0, 0); }
 
     // Function advances walker by one step
-    step(nextHueFn) {
+    step(nextColourFn) {
         let anyStuck = false;
 
         const stepCells = clampInt(this.params.walkerStepCells, 1, 8);
@@ -622,11 +715,9 @@ class DLASim {
                 // If walker touches cluster, it has a chance to stuck
                 // Lower stuck probability makes the growth softer/more irregular
                 if (Math.random() <= this.params.stickProb) {
-                    const hue = typeof nextHueFn === "function" 
-                        ? nextHueFn() 
-                        : 0;
-                    
-                    const rgb = hslToRgb((hue % 360) / 360, 0.72, 0.50);
+                    const rgb = typeof nextColourFn === "function" 
+                        ? nextColourFn(w.ix, w.iy) 
+                        : { r: 17, g: 24, b: 39 };
 
                     this._occupy(w.ix, w.iy, rgb);
                     anyStuck = true;
@@ -681,6 +772,23 @@ class DLASim {
         }
 
         return false;
+    }
+
+    countOccupiedNeighbours(ix, iy) {
+        let count = 0;
+
+        for (let oy = -1; oy <= 1; oy++) {
+            for (let ox = -1; ox <= 1; ox++) {
+                if (ox === 0 && oy === 0) continue;
+
+                const x = ix + ox;
+                const y = iy + oy;
+
+                if (this._inBounds(x, y) && this.occ[y * this.res + x]) count++;
+            }
+        }
+
+        return count;
     }
 
     // Spawns new walker near the current cluster
@@ -789,9 +897,10 @@ function init() {
     });
     
     // Changes to resolution or seed mode requires an entire simulation rebuild, not just drawFrame()
-    ["simRes", "seedMode"].forEach((id) => {
+    ["simRes", "seedMode", "colorScheme"].forEach((id) => {
         els[id].addEventListener("change", () => {
         stop();
+        updateColourMeaning();
         buildSim();
         drawFrame();
         });
@@ -816,6 +925,7 @@ function init() {
     els.dimRunBtn.addEventListener("click", () => runDimensionEstimate());
     
     // Builds first simulation
+    updateColourMeaning();
     buildSim();
     view2d.resizeToDisplay({ trigger: false });
     drawFrame();    // Draws said simulation

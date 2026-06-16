@@ -1,5 +1,6 @@
 // js/pages/basePage.js:
 import { loadNavAndFooter } from "../shared/components.js";
+import { initMathJax } from "../shared/mathjax.js";
 
 // Function to highlight the current page in the navbar
 function highlightActiveNavLink({ openParentDetails = true } = {}) {
@@ -83,4 +84,5 @@ export async function initBasePage({
         }
     }
 
+    await initMathJax(document.body);
 }

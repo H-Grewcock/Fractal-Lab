@@ -178,14 +178,18 @@
     <main class="page">
         <header class="page-head">
             <h1>Newton Basins</h1>
-            <p class="hint">Click to zoom in &bull; Right-click to zoom out &bull; Drag to pan</p>
+            <p class="intro-copy">
+                Each pixel is a complex starting value for Newton's method. The algorithm repeatedly moves the
+                point toward a root of \(f(z)\), and the colour records which root it reaches and how quickly it
+                converges; the intricate boundaries mark starting values where tiny changes lead to different roots.
+            </p>
         </header>
 
         <section class="tool-shell">
             <div class="tool-topbar">
                 <div class="tool-title">
                     <h2>Basins of Attraction</h2>
-                    <p class="hintline">f(z) = z^3 + (k - 1)z - k</p>
+                    <p class="hintline">\(f(z) = z^3 + (k - 1)z - k\)</p>
                 </div>
                 <div class="mono" id="kReadout" aria-live="polite">k = -0.50 + 0.50i</div>
             </div>

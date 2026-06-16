@@ -3,6 +3,7 @@ import { qs, qsa, clamp, parseNumber } from "../shared/dom.js";
 import { View2D } from "../shared/view2D.js";
 import { exportCanvasPNG } from "../shared/exportMedia.js";
 import { DimensionLab } from "../shared/dimension/index.js";
+import { typesetMath } from "../shared/mathjax.js";
 
 // Parses integer safely
 const intOr = (v, fallback) => {
@@ -1137,8 +1138,9 @@ function setDimReadout(result, label = "") {
     const r2 = result.fit?.r2;
     // Updates dimension readout after DimensionLab finishes
     valueEl.textContent = d.toFixed(4);
-    metaEl.textContent 
-        = `${label}${label ? " | " : ""}${result.estimator}${Number.isFinite(r2) ? `, R2=${r2.toFixed(3)}` : ""}`;
+    metaEl.textContent
+        = `${label}${label ? " | " : ""}${result.estimator}${Number.isFinite(r2) ? `, \\(R^2=${r2.toFixed(3)}\\)` : ""}`;
+    typesetMath(metaEl);
 }
 
 // Function runs box-counting dimension estimation on current dendrite drawing

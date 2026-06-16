@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-light">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>About</title>
+    <link rel="stylesheet" href="css/styles.css"/>
+</head>
+
+<body>
+    <div id="nav-container" role="navigation" aria-label="Primary navigation"></div>
+
+    <main class="page">
+        <header class="about-hero">
+            <div>
+                <div class="mono eyebrow">Project profile</div>
+                <h1>About Fractal Lab</h1>
+                <p class="hero-sub">
+                    Fractal Lab was created by Hannah Grewcock, a Master's student at the
+                    University of St Andrews, as an interactive way to explore fractal
+                    geometry through visual experiments, adjustable parameters, and live
+                    mathematical examples.
+                </p>
+            </div>
+
+            <aside class="about-panel" aria-label="Project details">
+                <div class="profile-row">
+                    <span>Creator</span>
+                    <strong>Hannah Grewcock</strong>
+                </div>
+                <div class="profile-row">
+                    <span>Institution</span>
+                    <strong>University of St Andrews</strong>
+                </div>
+                <div class="profile-row">
+                    <span>Supervision</span>
+                    <strong>
+                        Kenneth Falconer,
+                        Regius Professor of Mathematics
+                    </strong>
+                </div>
+            </aside>
+        </header>
+
+        <section class="section-block about-layout">
+            <article class="about-copy">
+                <p class="section-kicker">Motivation</p>
+                <h2>Why this site exists</h2>
+                <p>
+                    Fractal Lab was created from the belief that fractal geometry becomes clearer
+                    when it can be seen, changed, and explored directly. Many fractals begin with
+                    simple rules, but their behaviour can be difficult to understand through static
+                    diagrams alone. Interactive visualisation helps make these ideas more intuitive.
+                </p>
+                <p>
+                    The project brings together examples from iterated function systems, affine maps,
+                    complex dynamics, fractal curves, stochastic growth, and three-dimensional
+                    constructions. Each section acts as a small workspace where users can adjust
+                    parameters, compare examples, and connect formulas with the images they produce.
+                </p>
+                <p>
+                    The aim is to make fractal geometry more approachable without losing the
+                    mathematical structure behind it. Fractal Lab is intended as a learning and
+                    outreach tool: a place for students, teachers, and curious users to experiment,
+                    build intuition, and engage with the subject visually.
+                </p>
+            </article>
+
+            <article class="about-copy">
+                <p class="section-kicker">Acknowledgement</p>
+                <h2>Supervision</h2>
+                <p>
+                    This project was supervised by
+                    Professor Kenneth Falconer,
+                    Regius Professor of Mathematics at the University of St Andrews.
+                </p>
+            </article>
+        </section>
+
+        <section class="section-block">
+            <div class="section-head">
+                <div>
+                    <p class="section-kicker">References</p>
+                    <h2>Links used</h2>
+                </div>
+                <p class="hint">Sources and background references used while developing the project.</p>
+            </div>
+
+            <div class="resource-list">
+                <a class="resource-link" href="https://www.wiley.com/en-us/Fractal+Geometry%3A+Mathematical+Foundations+and+Applications%2C+3rd+Edition-p-9781119942399" target="_blank" rel="noopener">
+                    <span class="resource-title">Fractal Geometry: Mathematical Foundations and Applications</span>
+                    <span class="resource-meta">Kenneth Falconer's book</span>
+                </a>
+
+                <a class="resource-link" href="https://mathshistory.st-andrews.ac.uk/" target="_blank" rel="noopener">
+                    <span class="resource-title">MacTutor History of Mathematics Archive</span>
+                    <span class="resource-meta">University of St Andrews mathematics history archive</span>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer-container" role="contentinfo"></div>
+
+    <script type="module">
+        import { initBasePage } from "./js/pages/basePage.js";
+        initBasePage().catch(console.error);
+    </script>
+</body>
+</html>

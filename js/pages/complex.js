@@ -5,6 +5,7 @@ import { renderMandelbrot } from "../complex/mandelbrotRenderer.js";
 import { renderJulia } from "../complex/juliaRenderer.js";
 import { createMandelJuliaConnection } from "../complex/mandelJuliaConnectionController.js";
 import { DimensionLab } from "../shared/dimension/index.js";
+import { typesetMath } from "../shared/mathjax.js";
 
 // Throws error if missing element
 const byId = (id) => {
@@ -78,7 +79,7 @@ function installDoubleClickZoom(view2d, drawAfter, factor = 1.6) {
         // Shift reverses zoom direction, i.e. shift + double click zooms out
         const f = e.shiftKey ? 1 / factor : factor;
         // Double click zooms in
-        view2d.zoomAtWorldPoint(w.x, w.y, f, { trigger: true });
+        view2d.zoomAtWorldPoint(w.x, w.y, f, { trigger: false });
 
         // Redraws after zooming if draw callback given
         if (typeof drawAfter === "function") {
@@ -107,9 +108,15 @@ function makeTimeoutDebounce(fn, ms = 120) {
 }
 
 // Dictates redraw behaviour after interactions
-function installRenderOnInteraction({ canvas, isActiveTab, draw }) {
+function installRenderOnInteraction({ canvas, isActiveTab, draw, consumeChanged }) {
+    const redrawIfChanged = () => {
+        if (!isActiveTab()) return;
+        if (typeof consumeChanged === "function" && !consumeChanged()) return;
+        draw();
+    };
+
     const wheelDone = makeTimeoutDebounce(() => {
-        if (isActiveTab()) draw();
+        redrawIfChanged();
     }, 140);
 
     // Redraws after stopping wheel zoom
@@ -119,28 +126,8 @@ function installRenderOnInteraction({ canvas, isActiveTab, draw }) {
 
     // Redraws after mouse up, i.e. stopping drag-to-pan
     window.addEventListener("mouseup", () => {
-        if (isActiveTab()) draw();
+        redrawIfChanged();
     });
-}
-
-function makeRafDebouncer(fn) {
-    let raf = 0;
-    let pending = false;
-
-    return () => {
-        pending = true;
-        if (raf) return;
-
-        // Debounces function to next animation frame
-        // Prevents too many redraws queued at once
-        raf = requestAnimationFrame(async () => {
-            raf = 0;
-            if (!pending) return;
-            pending = false;
-
-            await fn();
-        });
-    };
 }
 
 // REturns canvas for currently active tab
@@ -215,11 +202,25 @@ function setDimReadout({ valueEl, metaEl }, result, { label = "" } = {}) {
 
     valueEl.textContent = `${d.toFixed(4)}`;
 
-    const r2txt = Number.isFinite(r2) 
-        ? `, R2 = ${r2.toFixed(3)}` 
+    const r2txt = Number.isFinite(r2)
+        ? `, \\(R^2 = ${r2.toFixed(3)}\\)`
         : "";
     // Updates dimension result display
     metaEl.textContent = `${label}${label ? " | " : ""}${result.estimator}${r2txt}`;
+    typesetMath(metaEl);
+}
+
+function makeTimeoutDebouncer(fn, ms = 220) {
+    let t = null;
+
+    return () => {
+        if (t) clearTimeout(t);
+
+        t = setTimeout(() => {
+            t = null;
+            fn();
+        }, ms);
+    };
 }
 
 // Escape time calculation: Mandelbrot set
@@ -458,6 +459,14 @@ async function main() {
     // Current c value
     let c = { re: numVal(cRealEl, -0.8), im: numVal(cImagEl, 0.156) };
     cReadout.textContent = formatC(c);
+
+    const changedViews = new Set();
+    const markViewChanged = (key) => changedViews.add(key);
+    const consumeViewChanged = (key) => {
+        const changed = changedViews.has(key);
+        changedViews.delete(key);
+        return changed;
+    };
     
     // Function updates Julia parameter
     function setC(newC, options = {}) {
@@ -531,8 +540,6 @@ async function main() {
         return drawConnectionTab();
     }
 
-    const drawActiveDebounced = makeRafDebouncer(drawActive);
-    
     // === VIEW === //
     const mandelView = new View2D({
         canvas: mandelCanvas,
@@ -543,6 +550,7 @@ async function main() {
         wheelZoomFactor: 1.15,
         zoomIndicatorEl: document.getElementById("zoom-indicator"),
         mouseCoordsEl: document.getElementById("mouse-coords"),
+        onChange: () => markViewChanged("mandelbrot"),
     });
     installDoubleClickZoom(mandelView, () => { if (activeTab === "mandelbrot") drawActive(); });
 
@@ -555,6 +563,7 @@ async function main() {
         wheelZoomFactor: 1.15,
         zoomIndicatorEl: document.getElementById("zoom-indicator-julia"),
         mouseCoordsEl: document.getElementById("mouse-coords-julia"),
+        onChange: () => markViewChanged("julia"),
     });
     installDoubleClickZoom(juliaView, () => { if (activeTab === "julia") drawActive(); });
 
@@ -566,6 +575,7 @@ async function main() {
         enableClickZoom: false,
         zoomIndicatorEl: null,
         mouseCoordsEl: null,
+        onChange: () => markViewChanged("connection"),
     });
     installDoubleClickZoom(mandelConnView, () => { if (activeTab === "connection") drawActive(); });
 
@@ -577,6 +587,7 @@ async function main() {
         enableClickZoom: false,
         zoomIndicatorEl: null,
         mouseCoordsEl: null,
+        onChange: () => markViewChanged("connection"),
     });
     installDoubleClickZoom(juliaConnView, () => { if (activeTab === "connection") drawActive(); });
 
@@ -606,21 +617,25 @@ async function main() {
         canvas: mandelCanvas,
         isActiveTab: () => activeTab === "mandelbrot",
         draw: () => drawActive(),
+        consumeChanged: () => consumeViewChanged("mandelbrot"),
     });
     installRenderOnInteraction({
         canvas: juliaCanvas,
         isActiveTab: () => activeTab === "julia",
         draw: () => drawActive(),
+        consumeChanged: () => consumeViewChanged("julia"),
     });
     installRenderOnInteraction({
         canvas: mandelConnCanvas,
         isActiveTab: () => activeTab === "connection",
         draw: () => drawActive(),
+        consumeChanged: () => consumeViewChanged("connection"),
     });
     installRenderOnInteraction({
         canvas: juliaConnCanvas,
         isActiveTab: () => activeTab === "connection",
         draw: () => drawActive(),
+        consumeChanged: () => consumeViewChanged("connection"),
     });
 
     async function runDimensionEstimate({ label = "" } = {}) {
@@ -700,7 +715,8 @@ async function main() {
                 const r2 = result.fit?.r2;
 
             dimValueEl.textContent = "2.0000";
-            dimMetaEl.textContent = `${label || `${target}/${mode}`} | Mandelbrot boundary Hausdorff dimension; finite render box-count=${finite}${Number.isFinite(r2) ? `, R2 = ${r2.toFixed(3)}` : ""}`;
+            dimMetaEl.textContent = `${label || `${target}/${mode}`} | Mandelbrot boundary Hausdorff dimension; finite render box-count=${finite}${Number.isFinite(r2) ? `, \\(R^2 = ${r2.toFixed(3)}\\)` : ""}`;
+            typesetMath(dimMetaEl);
             
             return result;
         }
@@ -800,8 +816,29 @@ async function main() {
     // Renders initial drawing
     await drawActive();
 
-    // Redraws after browser resize
-    window.addEventListener("resize", () => drawActiveDebounced()); // debounced through requestAnimationFrame
+    function resizeActiveCanvasToDisplay() {
+        if (activeTab === "mandelbrot") {
+            return mandelView.resizeToDisplay({ trigger: false });
+        }
+
+        if (activeTab === "julia") {
+            return juliaView.resizeToDisplay({ trigger: false });
+        }
+
+        const leftChanged = mandelConnView.resizeToDisplay({ trigger: false });
+        const rightChanged = juliaConnView.resizeToDisplay({ trigger: false });
+        return leftChanged || rightChanged;
+    }
+
+    // Prevents constantly resizing when scrolling
+    const redrawAfterSettledResize = makeTimeoutDebouncer(async () => {
+        if (resizeActiveCanvasToDisplay()) {
+            await drawActive();
+        }
+    }, 260);
+
+    // Redraw only after the active canvas really changes size, and only once the resize has settled.
+    window.addEventListener("resize", redrawAfterSettledResize);
 }
 
 // Starts complex lab

@@ -3,6 +3,7 @@ import { View2D } from "../shared/view2D.js";
 import { qs, parseNumber, resizeCanvasToDisplaySize } from "../shared/dom.js";
 import { exportCanvasPNG } from "../shared/exportMedia.js";
 import { DimensionLab } from "../shared/dimension/index.js";
+import { typesetMath } from "../shared/mathjax.js";
 
 // Keeps number in interval [a, b]
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -1195,8 +1196,9 @@ function setDimReadout(result) {
         dimValueEl.textContent = result.dimension.toFixed(4);
     }
     if (dimMetaEl) {
-        dimMetaEl.textContent 
-            = `${result.estimator}${Number.isFinite(r2) ? `, R2=${r2.toFixed(3)}` : ""}`;
+        dimMetaEl.textContent
+            = `${result.estimator}${Number.isFinite(r2) ? `, \\(R^2=${r2.toFixed(3)}\\)` : ""}`;
+        typesetMath(dimMetaEl);
     }
 }
 

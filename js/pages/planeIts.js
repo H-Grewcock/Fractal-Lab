@@ -3,6 +3,7 @@ import { qs, clamp, parseNumber } from "../shared/dom.js";
 import { View2D } from "../shared/view2D.js";
 import { exportCanvasPNG } from "../shared/exportMedia.js";
 import { DimensionLab } from "../shared/dimension/index.js";
+import { typesetMath } from "../shared/mathjax.js";
 
 // Function parses text range "-3, 3" into { min: 3, max: 3 }
 function parseRangeStr(rangeStr, fallback = { min: -3, max: 3 }) {
@@ -716,8 +717,9 @@ function setDimReadout(result) {
 
     // Updates dimension readout
     valueEl.textContent = result.dimension.toFixed(4);
-    metaEl.textContent 
-        = `${result.estimator}${Number.isFinite(r2) ? `, R2=${r2.toFixed(3)}` : ""}`;
+    metaEl.textContent
+        = `${result.estimator}${Number.isFinite(r2) ? `, \\(R^2=${r2.toFixed(3)}\\)` : ""}`;
+    typesetMath(metaEl);
 }
 
 // Function runs box-counting dimension estimation on current canvas image

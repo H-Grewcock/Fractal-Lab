@@ -56,6 +56,25 @@
         .panel-title{ font-weight:750; margin-bottom:10px; }
         .control{ display:grid; gap:6px; margin-top:10px; }
         .control > label{ font-size:12px; color: var(--muted); font-weight:650; }
+        .intro-copy{
+            margin: 10px 0 18px;
+            max-width: 920px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+        .tabs{
+            display:grid;
+            grid-template-columns: 1fr 1fr;
+            gap:8px;
+            margin-bottom:12px;
+        }
+        .tab-btn[aria-selected="true"]{
+            border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+            background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+            font-weight:750;
+        }
+        .tab-section[hidden]{ display:none; }
 
         .two{
             display:grid;
@@ -200,6 +219,13 @@
     <main class="page">
         <header class="page-head">
             <h1>3D Fractals Lab</h1>
+            <p class="intro-copy">
+                The canvas shows projected points from a 3D fractal: points are generated in space, then drawn on
+                the screen through the current camera angle. Escape-time examples keep points that survive an
+                iteration rule, while the IFS tab repeatedly applies vertex moves or affine maps to build
+                self-similar cloud. The dimension tools measure the original 3D point cloud using box-counting
+                or correlation estimates.
+            </p>
         </header>
 
         <section class="tool-shell">
@@ -225,14 +251,62 @@
                 <aside class="panel" aria-label="3D fractal controls">
                     <div class="panel-title mono">Controls</div>
 
-                    <div class="control">
-                        <label for="fractalExample">Fractal</label>
-                        <select id="fractalExample">
-                            <option value="mandelbulb" selected>Mandelbulb</option>
-                            <option value="julia3d">3D Julia</option>
-                            <option value="sierpinski">Sierpinski tetrahedron (chaos)</option>
-                            <option value="menger">Menger sponge (centres)</option>
-                        </select>
+                    <div class="tabs" role="tablist" aria-label="3D fractal control tabs">
+                        <button id="tabEscape" class="tab-btn" type="button" role="tab" aria-selected="true" aria-controls="escapeControls">Escape fractals</button>
+                        <button id="tabIFS" class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="ifsControls">3D IFS systems</button>
+                    </div>
+
+                    <div id="escapeControls" class="tab-section" role="tabpanel" aria-labelledby="tabEscape">
+                        <div class="control">
+                            <label for="fractalExample">Fractal</label>
+                            <select id="fractalExample">
+                                <option value="mandelbulb" selected>Mandelbulb</option>
+                                <option value="julia3d">3D Julia</option>
+                                <option value="sierpinski">Sierpinski tetrahedron (chaos)</option>
+                                <option value="menger">Menger sponge (centres)</option>
+                            </select>
+                        </div>
+
+                        <div class="control">
+                            <label for="bulbPreset">Preset</label>
+                            <select id="bulbPreset">
+                                <option value="custom" selected>Custom</option>
+                                <option value="classic8">Classic Mandelbulb</option>
+                                <option value="power5">Power 5 star</option>
+                                <option value="power9">Power 9 coral</option>
+                                <option value="softJulia">Soft 3D Julia</option>
+                                <option value="spikeJulia">Spiky 3D Julia</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="ifsControls" class="tab-section" role="tabpanel" aria-labelledby="tabIFS" hidden>
+                        <div class="control">
+                            <label for="ifsPreset">IFS preset</label>
+                            <select id="ifsPreset">
+                                <option value="tetra" selected>Tetrahedron chaos game</option>
+                                <option value="cube">Cube chaos game</option>
+                                <option value="octa">Octahedron chaos game</option>
+                                <option value="icosa">Icosahedron chaos game</option>
+                                <option value="fern3d">3D Barnsley fern</option>
+                                <option value="tree3d">3D branching tree</option>
+                            </select>
+                        </div>
+
+                        <div class="two">
+                            <div class="control">
+                                <label for="ifsLambda">Move fraction</label>
+                                <input type="number" id="ifsLambda" min="0.05" max="0.95" step="0.01" value="0.50"/>
+                            </div>
+                            <div class="control">
+                                <label for="ifsRule">Rule</label>
+                                <select id="ifsRule">
+                                    <option value="none" selected>Any vertex</option>
+                                    <option value="noRepeat">No immediate repeat</option>
+                                    <option value="noOpposite">No opposite vertex</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="two">
@@ -301,6 +375,8 @@
                             <select id="colorScheme">
                                 <option value="classic" selected>Classic</option>
                                 <option value="escape">Escape (greyscale)</option>
+                                <option value="depth">Depth shading</option>
+                                <option value="vertex">IFS generation / vertex</option>
                             </select>
                         </div>
                     </div>
@@ -317,10 +393,65 @@
                     </div>
 
                     <details class="advanced">
-                        <summary>Dimension (2D projection)</summary>
+                        <summary>Slice viewer</summary>
 
                         <div class="hintline">
-                            Runs a simple box-count on the current projected view.
+                            Shows a thin planar cross-section through the current point cloud, like an MRI slice.
+                        </div>
+
+                        <div class="two">
+                            <div class="control">
+                                <label for="slicePlane">Plane</label>
+                                <select id="slicePlane">
+                                    <option value="off" selected>Off</option>
+                                    <option value="xy">XY slice (fixed z)</option>
+                                    <option value="xz">XZ slice (fixed y)</option>
+                                    <option value="yz">YZ slice (fixed x)</option>
+                                </select>
+                            </div>
+                            <div class="control">
+                                <label for="sliceValue">Slice value</label>
+                                <input type="number" id="sliceValue" min="-1.5" max="1.5" step="0.05" value="0.10"/>
+                            </div>
+                        </div>
+
+                        <div class="two">
+                            <div class="control">
+                                <div class="rowline">
+                                    <label for="sliceSlider">Position</label>
+                                    <span class="pill" id="sliceReadout">off</span>
+                                </div>
+                                <input type="range" id="sliceSlider" min="-1.5" max="1.5" step="0.01" value="0.10"/>
+                            </div>
+                            <div class="control">
+                                <label for="sliceThickness">Thickness</label>
+                                <input type="number" id="sliceThickness" min="0.01" max="1" step="0.01" value="0.08"/>
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button id="slicePrevBtn" type="button">Previous slice</button>
+                            <button id="sliceNextBtn" type="button">Next slice</button>
+                            <button id="slicePreset01Btn" type="button">z = 0.1</button>
+                            <button id="slicePreset02Btn" type="button">z = 0.2</button>
+                            <button id="slicePreset03Btn" type="button">z = 0.3</button>
+                            <button id="sliceOffBtn" type="button">Show full cloud</button>
+                        </div>
+                    </details>
+
+                    <details class="advanced">
+                        <summary>Dimension estimates</summary>
+
+                        <div class="hintline">
+                            Estimates use the point cloud before projection.
+                        </div>
+
+                        <div class="control">
+                            <label for="dimMode">Estimator</label>
+                            <select id="dimMode">
+                                <option value="box3d" selected>Box dimension of 3D cloud</option>
+                                <option value="correlation3d">Correlation dimension of 3D cloud</option>
+                            </select>
                         </div>
 
                         <div class="two">
@@ -350,7 +481,7 @@
                         </div>
 
                         <div class="rowline">
-                            <span class="pill" id="dimValue">D approx -</span>
+                            <span class="pill" id="dimValue">\(D \approx\) -</span>
                             <span class="pill" id="dimMeta">-</span>
                         </div>
                     </details>

@@ -175,9 +175,11 @@
     <main class="page">
         <header class="page-head">
             <h1>Plane Iterations Lab</h1>
-            <p class="hint">
-                Iterate a planar map <span class="mono">(x,y) -> (f(x,y), g(x,y))</span>.
-                Default mode draws a single orbit *cumulatively* (like your screenshots).
+            <p class="intro-copy">
+                This traces repeated applications of a planar map
+                <span class="mono">\((x,y) \to (f(x,y), g(x,y))\)</span>. A single seed draws one orbit over time,
+                while a grid of seeds shows how nearby starting points move through the phase plane and reveal
+                attractors, cycles, or unstable regions.
             </p>
         </header>
 
@@ -245,11 +247,11 @@
 
                 <div class="two" id="singleSeedBox">
                     <div class="control">
-                    <label for="seedX">Seed x0</label>
+                    <label for="seedX">Seed \(x_0\)</label>
                     <input id="seedX" type="number" value="0" step="0.01" />
                     </div>
                     <div class="control">
-                    <label for="seedY">Seed y0</label>
+                    <label for="seedY">Seed \(y_0\)</label>
                     <input id="seedY" type="number" value="0" step="0.01" />
                     </div>
                 </div>

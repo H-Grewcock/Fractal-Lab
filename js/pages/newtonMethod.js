@@ -1,6 +1,7 @@
 // js/pages/newtonMethod.js:
 import { exportCanvasPNG } from "../shared/exportMedia.js";
 import { DimensionLab, canvasToMask, boundaryFromClasses } from "../shared/dimension/index.js";
+import { typesetMath } from "../shared/mathjax.js";
 
 // File draws the basins of attraction for Newton's method applied to f(z) = z**3 + (k-1)z - k
 // Each pixel trated as starting value z0, and we iterate Newton's method, see which root it converges to
@@ -335,8 +336,9 @@ function setDimReadout(result) {
     const r2 = result.fit?.r2;
 
     dimMetaEl.textContent = Number.isFinite(r2)
-        ? `boxCountBitmap | R2 = ${r2.toFixed(3)}`
+        ? `boxCountBitmap | \\(R^2 = ${r2.toFixed(3)}\\)`
         : `boxCountBitmap`;
+    typesetMath(dimMetaEl);
 }
 
 function estimateDimension() {

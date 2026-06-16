@@ -78,6 +78,14 @@
         .panel-title { font-weight: 750; margin-bottom: 10px; }
         .control { display: grid; gap: 6px; margin-top: 10px; }
 
+        .intro-copy {
+            margin: 10px 0 18px;
+            max-width: 920px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
         .actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -173,14 +181,18 @@
     <main class="page">
         <header class="page-head">
         <h1>Dendrites</h1>
-        <p class="hint">Diffusion-limited aggregation. Wheel zoom &bull; Drag pan &bull; Step for comprehension.</p>
+        <p class="intro-copy">
+            This simulates diffusion-limited aggregation: random walkers move through the plane until they touch
+            the existing cluster, then stick and become part of the growing dendrite. The branching shape appears
+            because tips are easier for new walkers to reach than sheltered gaps near the centre.
+        </p>
         </header>
 
         <section class="tool-shell">
         <div class="tool-topbar">
             <div class="tool-title">
             <h2>Diffusion-Limited Aggregation (DLA)</h2>
-            <p class="hintline">Random walkers stick to the cluster -> branching growth.</p>
+            <p class="hintline">Random walkers stick to the cluster \(\to\) branching growth.</p>
             </div>
 
             <div class="mono" id="statusReadout" aria-live="polite">Stuck: 1 | Walkers: 400</div>
@@ -233,8 +245,20 @@
             </div>
 
             <div class="control">
-                <label for="colorChangeRate">Colour change rate</label>
+                <label for="colorScheme">Colour meaning</label>
+                <select id="colorScheme">
+                    <option value="age" selected>Growth order</option>
+                    <option value="radius">Distance from seed</option>
+                    <option value="angle">Branch direction</option>
+                    <option value="density">Local crowding</option>
+                    <option value="single">Single ink colour</option>
+                </select>
+            </div>
+
+            <div class="control">
+                <label for="colorChangeRate">Colour scale speed</label>
                 <input id="colorChangeRate" type="range" min="0" max="4" step="0.01" value="0.35" />
+                <p class="hintline" id="colorMeaning">Colour shows when each particle stuck: older near the seed, newer near the tips.</p>
             </div>
 
             <div class="control">
@@ -311,7 +335,7 @@
                 </div>
 
                 <div class="dim-readout">
-                <div class="mono"><span style="opacity:.7;">D approx</span> <span id="dimValue">-</span></div>
+                <div class="mono"><span style="opacity:.7;">\(D \approx\)</span> <span id="dimValue">-</span></div>
                 <div class="hintline" id="dimMeta" style="margin-top:4px;">Box-counting on bitmap.</div>
                 </div>
             </details>

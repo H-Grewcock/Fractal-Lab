@@ -242,14 +242,19 @@
     <main class="page">
         <header class="page-head">
             <h1>Affine IFS</h1>
-            <p class="hint">Wheel zoom &bull; Drag to pan &bull; Drag parallelogram corners to reshape a map</p>
+            <p class="intro-copy">
+                This shows an iterated function system made from affine maps: each map shrinks, rotates, shears,
+                or moves the current point, and repeatedly choosing maps creates the final fractal cloud. The
+                parallelograms show where each map sends the unit square, so dragging their corners changes the
+                transformations directly.
+            </p>
         </header>
 
         <section class="tool-shell">
             <div class="tool-topbar">
                 <div class="tool-title">
                     <h2>Chaos Game + draggable affine maps</h2>
-                    <p class="hintline">Each map is shown as a parallelogram: b, b+c1, b+c2, b+c1+c2</p>
+                    <p class="hintline">Each map is shown as a parallelogram: \(b,\ b+c_1,\ b+c_2,\ b+c_1+c_2\)</p>
                 </div>
 
                 <div class="mono" id="statusReadout" aria-live="polite">
@@ -269,10 +274,10 @@
                 </div>
 
                 <div class="hintline" style="margin-top:10px;">
-                    Drag corners: <span class="mono">b</span> moves (translation),
-                    <span class="mono">b+c1</span> changes column 1,
-                    <span class="mono">b+c2</span> changes column 2,
-                    <span class="mono">b+c1+c2</span> changes both (Shift toggles which column is preserved).
+                    Drag corners: <span class="mono">\(b\)</span> moves (translation),
+                    <span class="mono">\(b+c_1\)</span> changes column 1,
+                    <span class="mono">\(b+c_2\)</span> changes column 2,
+                    <span class="mono">\(b+c_1+c_2\)</span> changes both (Shift toggles which column is preserved).
                 </div>
                 </div>
 
@@ -385,7 +390,7 @@
                     </div>
 
                     <div class="hintline">
-                    D approx <span class="mono" id="dimValue">-</span><br/>
+                    \(D \approx\) <span class="mono" id="dimValue">-</span><br/>
                     <span class="mono" id="dimMeta"></span>
                     </div>
                 </details>

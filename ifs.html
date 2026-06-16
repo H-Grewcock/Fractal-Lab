@@ -320,7 +320,11 @@
     <main class="page">
         <header class="page-head">
             <h1>IFS Visualiser</h1>
-            <p class="hint">Drag to pan &bull; Scroll wheel to zoom &bull; Step/Play to see E1 -> E2 -> E3</p>
+            <p class="intro-copy">
+                This visualiser starts with a simple seed shape and repeatedly replaces it by transformed copies of
+                itself. Each step applies the listed maps to the previous set, so the construction stages show how
+                \(E_1, E_2, E_3,\ldots\) converge toward the final self-similar fractal.
+            </p>
         </header>
 
         <section class="tool-shell" id="affine">
@@ -375,9 +379,12 @@
                     <div class="control">
                         <label for="ifsSeed">Seed</label>
                         <select id="ifsSeed">
-                            <option value="unitSquare" selected>Unit square [0,1]^2</option>
-                            <option value="unitTriangle">Right triangle x>=0, y>=0, x+y<=1</option>
+                            <option value="unitSquare" selected>Unit square</option>
+                            <option value="unitTriangle">Right triangle</option>
                         </select>
+                        <div class="hintline">
+                            Unit square \([0,1]^2\); right triangle \(\{(x,y): x \ge 0,\ y \ge 0,\ x+y \le 1\}\).
+                        </div>
                     </div>
 
                     <div class="control">
@@ -430,7 +437,7 @@
                         <div id="mapsContainer" class="maps" aria-label="IFS maps list"></div>
 
                         <div class="hintline">
-                            Each map copies the seed into a cell (x0,y0,w,h). Arrows show rotation/flip orientation.
+                            Each map copies the seed into a cell \((x_0,y_0,w,h)\). Arrows show rotation/flip orientation.
                         </div>
                     </details>
 
@@ -497,7 +504,7 @@
                         </div>
 
                         <div class="hintline">
-                            <div class="mono">D approx <strong id="dimValue">-</strong></div>
+                            <div class="mono">\(D \approx\) <strong id="dimValue">-</strong></div>
                             <div class="mono" id="dimMeta">-</div>
                         </div>
                     </details>
