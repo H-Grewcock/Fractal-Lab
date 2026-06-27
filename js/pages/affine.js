@@ -24,6 +24,7 @@ const UI = {
     generate: () => qs("#generateAffine"),
     reset: () => qs("#resetAffine"),
     export: () => qs("#exportAffine"),
+    exportHandles: () => qs("#exportAffineHandles"),
     clearSteps: () => qs("#clearSteps"),
 
     stepOnce: () => qs("#stepOnce"),
@@ -633,7 +634,81 @@ function drawExportPoints(exportCtx, exportCanvas, points) {
     exportCtx.restore();
 }
 
-function exportAffinePNG() {
+function drawExportReferenceSquare(exportCtx, exportCanvas) {
+    const p00 = worldToCanvasFor(exportCanvas, REF.p00.x, REF.p00.y);
+    const p10 = worldToCanvasFor(exportCanvas, REF.p10.x, REF.p10.y);
+    const p11 = worldToCanvasFor(exportCanvas, REF.p11.x, REF.p11.y);
+    const p01 = worldToCanvasFor(exportCanvas, REF.p01.x, REF.p01.y);
+
+    exportCtx.save();
+    exportCtx.lineWidth = 2;
+    exportCtx.strokeStyle = "rgba(37, 99, 235, 0.55)";
+    exportCtx.beginPath();
+    exportCtx.moveTo(p00.px, p00.py);
+    exportCtx.lineTo(p10.px, p10.py);
+    exportCtx.lineTo(p11.px, p11.py);
+    exportCtx.lineTo(p01.px, p01.py);
+    exportCtx.closePath();
+    exportCtx.stroke();
+    exportCtx.restore();
+}
+
+function drawExportHandle(exportCtx, p, radius, color) {
+    exportCtx.save();
+    exportCtx.beginPath();
+    exportCtx.arc(p.px, p.py, radius, 0, Math.PI * 2);
+    exportCtx.fillStyle = color;
+    exportCtx.fill();
+    exportCtx.lineWidth = 2;
+    exportCtx.strokeStyle = "rgba(255, 255, 255, 0.96)";
+    exportCtx.stroke();
+    exportCtx.restore();
+}
+
+function drawExportMapParallelograms(exportCtx, exportCanvas) {
+    const radius = Math.max(5, Math.min(10, exportCanvas.width * 0.009));
+
+    exportCtx.save();
+    exportCtx.font = "13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
+    exportCtx.textBaseline = "alphabetic";
+
+    for (let i = 0; i < affineMaps.length; i++) {
+        const { b, c1, c2, c12 } = imageParallelogram(affineMaps[i]);
+        const pb = worldToCanvasFor(exportCanvas, b.x, b.y);
+        const p1 = worldToCanvasFor(exportCanvas, c1.x, c1.y);
+        const p2 = worldToCanvasFor(exportCanvas, c2.x, c2.y);
+        const p12 = worldToCanvasFor(exportCanvas, c12.x, c12.y);
+
+        exportCtx.lineWidth = 2.2;
+        exportCtx.strokeStyle = "rgba(185, 28, 28, 0.62)";
+        exportCtx.beginPath();
+        exportCtx.moveTo(pb.px, pb.py);
+        exportCtx.lineTo(p1.px, p1.py);
+        exportCtx.lineTo(p12.px, p12.py);
+        exportCtx.lineTo(p2.px, p2.py);
+        exportCtx.closePath();
+        exportCtx.stroke();
+
+        exportCtx.lineWidth = 1;
+        exportCtx.strokeStyle = "rgba(15, 23, 42, 0.24)";
+        exportCtx.beginPath();
+        exportCtx.moveTo(pb.px, pb.py); exportCtx.lineTo(p12.px, p12.py);
+        exportCtx.moveTo(p1.px, p1.py); exportCtx.lineTo(p2.px, p2.py);
+        exportCtx.stroke();
+
+        drawExportHandle(exportCtx, pb, radius, "rgba(220, 40, 40, 0.98)");
+        drawExportHandle(exportCtx, p1, radius, "rgba(40, 120, 220, 0.98)");
+        drawExportHandle(exportCtx, p2, radius, "rgba(40, 180, 120, 0.98)");
+        drawExportHandle(exportCtx, p12, radius, "rgba(160, 90, 220, 0.98)");
+
+        exportCtx.fillStyle = "rgba(15, 23, 42, 0.82)";
+        exportCtx.fillText(`f${i + 1}`, pb.px + radius + 4, pb.py - radius - 3);
+    }
+
+    exportCtx.restore();
+}
+
+function exportAffinePNG({ includeHandles = false } = {}) {
     view2d.resizeToDisplay({ trigger: false });
     regenerateIfNeeded();
 
@@ -646,9 +721,11 @@ function exportAffinePNG() {
     outCtx.fillRect(0, 0, out.width, out.height);
 
     drawExportGrid(outCtx, out);
+    if (includeHandles) drawExportReferenceSquare(outCtx, out);
     drawExportPoints(outCtx, out, cachedPoints);
+    if (includeHandles) drawExportMapParallelograms(outCtx, out);
 
-    exportCanvasPNG(out, "affine_ifs.png");
+    exportCanvasPNG(out, includeHandles ? "affine_ifs_handles.png" : "affine_ifs.png");
 }
 
 function drawStepPoints() {
@@ -1315,6 +1392,10 @@ UI.reset().addEventListener("click", () => {
 
 UI.export().addEventListener("click", () =>{
     exportAffinePNG();
+});
+
+UI.exportHandles()?.addEventListener("click", () => {
+    exportAffinePNG({ includeHandles: true });
 });
 
 UI.clearSteps().addEventListener("click", () => { 
