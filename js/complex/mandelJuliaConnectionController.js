@@ -167,7 +167,7 @@ export function createMandelJuliaConnection({
 
         // Sets clicked point as new Julia parameter c
         setC({ re: w.x, im: w.y }, { syncInputs: true });
-        drawCMarker(mandelView, mandelCtx, c);
+        drawMandel();
         drawJulia();
     }
 
