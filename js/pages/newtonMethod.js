@@ -27,11 +27,13 @@ const iterationsInput = document.getElementById("newtonIterations");
 const resolutionInput = document.getElementById("newtonResolution");
 const kRealInput = document.getElementById("kReal");
 const kImagInput = document.getElementById("kImag");
+const functionExprInput = document.getElementById("functionExpr");
 
 const drawBtn = document.getElementById("drawNewton");
 const clearBtn = document.getElementById("clearNewton");
 const exportBtn = document.getElementById("exportNewton");
 const resetViewBtn = document.getElementById("resetViewNewton");
+const resetEquationBtn = document.getElementById("resetEquationNewton");
 const toggleGridBtn = document.getElementById("toggleGridNewton");
 const toggleAnimBtn = document.getElementById("toggleAnimationNewton");
 const startRecBtn = document.getElementById("startRecordingNewton");
@@ -66,6 +68,10 @@ let kVals = {
     im: parseFloat(kImagInput?.value || "0.5")
 };
 
+const DEFAULT_FUNCTION_EXPR = "z^3 + (k - 1) * z - k";
+let compiledEquation = null;
+let compiledEquationSource = "";
+
 // Stores most recent basin classification
 let lastClassIds = null;    // Used by dimension estimator to measure boundary between Newton basins
 let lastWH = { w: 0, h: 0 };
@@ -91,23 +97,226 @@ function cAbs(a) { return Math.hypot(a.r, a.i); }   // Modulus
 function cScale(a, s) { return { r: a.r * s, i: a.i * s }; }
 function cSqr(a) { return cMul(a, a); }
 function cCube(a) { return cMul(cMul(a, a), a); }
+function cNeg(a) { return { r: -a.r, i: -a.i }; }
+function cFromReal(r) { return { r, i: 0 }; }
+function cLog(a) { return { r: Math.log(cAbs(a)), i: Math.atan2(a.i, a.r) }; }
+function cExp(a) {
+    const e = Math.exp(a.r);
+    return { r: e * Math.cos(a.i), i: e * Math.sin(a.i) };
+}
+function cPow(a, b) {
+    const nearestInteger = Math.round(b.r);
+    const realIntegerExponent = Math.abs(b.i) < 1e-12 && Math.abs(b.r - nearestInteger) < 1e-12;
 
-// f(z) = z**3 + (k-1)z - k
-function f(z, k) {
-    const kMinus1 = { r: k.r - 1, i: k.i };
+    if (realIntegerExponent) {
+        const n = nearestInteger;
+        if (n === 0) return cFromReal(1);
 
-    return cSub(
-        cAdd(cCube(z), cMul(kMinus1, z)),
-        k
-    );
+        let result = cFromReal(1);
+        const base = n > 0 ? a : cDiv(cFromReal(1), a);
+
+        for (let i = 0; i < Math.abs(n); i++) {
+            result = cMul(result, base);
+        }
+
+        return result;
+    }
+
+    return cExp(cMul(b, cLog(a)));
+}
+function cSin(a) {
+    return { r: Math.sin(a.r) * Math.cosh(a.i), i: Math.cos(a.r) * Math.sinh(a.i) };
+}
+function cCos(a) {
+    return { r: Math.cos(a.r) * Math.cosh(a.i), i: -Math.sin(a.r) * Math.sinh(a.i) };
+}
+function cTan(a) { return cDiv(cSin(a), cCos(a)); }
+function cSqrt(a) { return cPow(a, cFromReal(0.5)); }
+function cConj(a) { return { r: a.r, i: -a.i }; }
+
+const COMPLEX_FUNCTIONS = {
+    abs: (a) => cFromReal(cAbs(a)),
+    conj: cConj,
+    cos: cCos,
+    exp: cExp,
+    im: (a) => cFromReal(a.i),
+    log: cLog,
+    re: (a) => cFromReal(a.r),
+    sin: cSin,
+    sqrt: cSqrt,
+    tan: cTan,
+};
+
+function tokenizeExpression(source) {
+    const tokens = [];
+    let i = 0;
+
+    while (i < source.length) {
+        const ch = source[i];
+
+        if (/\s/.test(ch)) {
+            i++;
+            continue;
+        }
+
+        const numberMatch = source.slice(i).match(/^(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/i);
+        if (numberMatch) {
+            tokens.push({ type: "number", value: parseFloat(numberMatch[0]) });
+            i += numberMatch[0].length;
+            continue;
+        }
+
+        const identMatch = source.slice(i).match(/^[A-Za-z_][A-Za-z0-9_]*/);
+        if (identMatch) {
+            tokens.push({ type: "identifier", value: identMatch[0].toLowerCase() });
+            i += identMatch[0].length;
+            continue;
+        }
+
+        if (ch === "*" && source[i + 1] === "*") {
+            tokens.push({ type: "^", value: "^" });
+            i += 2;
+            continue;
+        }
+
+        if ("+-*/^(),".includes(ch)) {
+            tokens.push({ type: ch, value: ch });
+            i++;
+            continue;
+        }
+
+        throw new Error(`Unexpected character "${ch}"`);
+    }
+
+    tokens.push({ type: "end", value: "" });
+    return tokens;
 }
 
-// f'(z) = 3 z**2 + (k-1)
-function derivF(z, k) {
-    const threeZ2 = cScale(cSqr(z), 3);
-    const kMinus1 = { r: k.r - 1, i: k.i };
+function compileComplexExpression(source) {
+    const tokens = tokenizeExpression(source);
+    let pos = 0;
 
-    return cAdd(threeZ2, kMinus1);
+    const peek = () => tokens[pos];
+    const match = (type) => {
+        if (peek().type !== type) return false;
+        pos++;
+        return true;
+    };
+    const expect = (type) => {
+        if (!match(type)) throw new Error(`Expected "${type}"`);
+    };
+    const startsImplicitFactor = (token) => (
+        token.type === "number" || token.type === "identifier" || token.type === "("
+    );
+
+    function parseExpression() {
+        let node = parseTerm();
+        while (peek().type === "+" || peek().type === "-") {
+            const op = peek().type;
+            pos++;
+            const right = parseTerm();
+            const left = node;
+            node = op === "+"
+                ? (z, k) => cAdd(left(z, k), right(z, k))
+                : (z, k) => cSub(left(z, k), right(z, k));
+        }
+        return node;
+    }
+
+    function parseTerm() {
+        let node = parsePower();
+        while (peek().type === "*" || peek().type === "/" || startsImplicitFactor(peek())) {
+            const op = peek().type;
+            if (op === "*" || op === "/") pos++;
+            const right = parsePower();
+            const left = node;
+            node = op === "/"
+                ? (z, k) => cDiv(left(z, k), right(z, k))
+                : (z, k) => cMul(left(z, k), right(z, k));
+        }
+        return node;
+    }
+
+    function parsePower() {
+        let node = parseUnary();
+        if (match("^")) {
+            const exponent = parsePower();
+            const base = node;
+            node = (z, k) => cPow(base(z, k), exponent(z, k));
+        }
+        return node;
+    }
+
+    function parseUnary() {
+        if (match("+")) return parseUnary();
+        if (match("-")) {
+            const node = parseUnary();
+            return (z, k) => cNeg(node(z, k));
+        }
+        return parsePrimary();
+    }
+
+    function parsePrimary() {
+        const token = peek();
+
+        if (match("number")) {
+            return () => cFromReal(token.value);
+        }
+
+        if (match("identifier")) {
+            const name = token.value;
+
+            if (peek().type === "(" && COMPLEX_FUNCTIONS[name]) {
+                pos++;
+                const arg = parseExpression();
+                expect(")");
+
+                return (z, k) => COMPLEX_FUNCTIONS[name](arg(z, k));
+            }
+
+            if (name === "z") return (z) => z;
+            if (name === "k") return (_z, k) => k;
+            if (name === "i") return () => ({ r: 0, i: 1 });
+            if (name === "pi") return () => cFromReal(Math.PI);
+            if (name === "e") return () => cFromReal(Math.E);
+
+            throw new Error(`Unknown symbol "${name}"`);
+        }
+
+        if (match("(")) {
+            const node = parseExpression();
+            expect(")");
+            return node;
+        }
+
+        throw new Error(`Expected a number, symbol, or "("`);
+    }
+
+    const node = parseExpression();
+    if (peek().type !== "end") {
+        throw new Error(`Unexpected "${peek().value}"`);
+    }
+    return node;
+}
+
+function getEquation() {
+    const fExpr = functionExprInput?.value.trim() || DEFAULT_FUNCTION_EXPR;
+
+    if (!compiledEquation || compiledEquationSource !== fExpr) {
+        compiledEquation = compileComplexExpression(fExpr);
+        compiledEquationSource = fExpr;
+    }
+
+    return compiledEquation;
+}
+
+function estimateDerivative(f, z, k) {
+    const h = 1e-5 * Math.max(1, cAbs(z));
+    const dz = { r: h, i: 0 };
+    const fPlus = f(cAdd(z, dz), k);
+    const fMinus = f(cSub(z, dz), k);
+
+    return cScale(cSub(fPlus, fMinus), 1 / (2 * h));
 }
 
 // Pixel position -> complex number:
@@ -170,6 +379,11 @@ function updateKReadout() {
     kReadout.textContent = `k = ${a.toFixed(2)} ${sign} ${absb.toFixed(2)}i`;
 }
 
+function setEquationError(message) {
+    if (!kReadout) return;
+    kReadout.textContent = message;
+}
+
 // Function to decide which root a final Newton iterate belongs to
 function classifyRoot(z, roots, tol = 1e-6) {
     for (let i = 0; i < roots.length; i++) {
@@ -185,16 +399,16 @@ function classifyRoot(z, roots, tol = 1e-6) {
 }
 
 // NEWTON'S METHOD: z_{n+1} = z_n - f(z_n) / f'(z_n)
-function newtonConverge(z0, k, maxIter, tol, roots) {
+function newtonConverge(z0, k, equation, maxIter, tol, roots) {
     let z = { r: z0.r, i: z0.i };
 
     for (let iter = 0; iter < maxIter; iter++) {
-        const fz = f(z, k);
-        const dfz = derivF(z, k);
+        const fz = equation(z, k);
+        const dfz = estimateDerivative(equation, z, k);
         const dfzAbs = cAbs(dfz);
 
         // Stops if derivative is invalid or zero; prevents dividing by zero
-        if (!isFinite(dfzAbs) || dfzAbs === 0) {
+        if (!isFinite(dfzAbs) || dfzAbs === 0 || !Number.isFinite(cAbs(fz))) {
             break;
         }
 
@@ -236,6 +450,14 @@ function drawNewton() {
     
     updateKReadout();
     const k = { r: kVals.re, i: kVals.im };
+    let equation;
+
+    try {
+        equation = getEquation();
+    } catch (err) {
+        setEquationError(`Equation error: ${err.message}`);
+        return;
+    }
 
     canvas.width = res;
     canvas.height = res;
@@ -260,7 +482,7 @@ function drawNewton() {
                 i: view.yMin + (y / (res - 1)) * (view.yMax - view.yMin),
             };
             // Runs Newton's method from this starting point
-            const r = newtonConverge(z0, k, maxIter, tol, roots);
+            const r = newtonConverge(z0, k, equation, maxIter, tol, roots);
 
             let R = 0, G = 0, B = 0;
             let cid = -1;
@@ -269,7 +491,7 @@ function drawNewton() {
                 // Root basin index
                 cid = r.idx;
                 // Choose base hue depending on the root reached 
-                const baseHue = hues[r.idx % hues.length];
+                const baseHue = (r.idx * 137.508) % 360;
                 // t used for iteration count to shade the basin
                 const t = r.iter / maxIter;
                 const hue = baseHue / 360;
@@ -535,6 +757,16 @@ clearBtn?.addEventListener("click", () => {
 
 exportBtn?.addEventListener("click", () => {
     exportCanvasPNG(canvas, "newton.png");
+});
+
+resetEquationBtn?.addEventListener("click", () => {
+    if (functionExprInput) functionExprInput.value = DEFAULT_FUNCTION_EXPR;
+    compiledEquation = null;
+    drawNewton();
+
+    if (dimAutoAfterDrawEl?.checked) {
+        estimateDimension();
+    }
 });
 
 // Resets view to the original coordinate window

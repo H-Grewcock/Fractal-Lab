@@ -136,6 +136,12 @@
         }
         @media (max-width: 560px) { .split2 { grid-template-columns: 1fr; } }
 
+        .equation-input {
+            min-height: 46px;
+            resize: vertical;
+            line-height: 1.35;
+        }
+
         details.advanced {
             margin-top: 14px;
             border-top: 1px solid var(--line2);
@@ -226,6 +232,19 @@
                             <input type="number" id="kImag" value="0.5" step="0.01" aria-label="k imaginary part"/>
                         </div>
                     </div>
+
+                    <details class="advanced" open>
+                        <summary>Equation</summary>
+
+                        <div class="control">
+                            <label for="functionExpr">f(z)</label>
+                            <textarea id="functionExpr" class="equation-input" spellcheck="false">z^3 + (k - 1) * z - k</textarea>
+                        </div>
+
+                        <div class="actions">
+                            <button id="resetEquationNewton" type="button" class="wide">Reset equation</button>
+                        </div>
+                    </details>
 
                     <details class="advanced">
                         <summary>View Range</summary>

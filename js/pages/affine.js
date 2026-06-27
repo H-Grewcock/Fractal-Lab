@@ -137,6 +137,17 @@ function worldToCanvas(x, y) {
     };
 }
 
+function worldToCanvasFor(targetCanvas, x, y) {
+    const v = view2d.view;
+    const u = (x - v.xMin) / (v.xMax - v.xMin);
+    const t = (v.yMax - y) / (v.yMax - v.yMin);
+
+    return {
+        px: u * targetCanvas.width,
+        py: t * targetCanvas.height
+    };
+}
+
 // Converts mouse/pointer event -> canvas pixel coordinates
 function clientToCanvasPx(e) {
     const rect = canvas.getBoundingClientRect();
@@ -570,6 +581,74 @@ function drawPoints(points) {
     }
     
     ctx.restore();
+}
+
+function drawExportGrid(exportCtx, exportCanvas) {
+    const v = view2d.view;
+    const wWorld = v.xMax - v.xMin;
+    const step = niceStep(wWorld / 10);
+
+    exportCtx.save();
+    exportCtx.lineWidth = 1;
+    exportCtx.strokeStyle = "rgba(30, 41, 59, 0.14)";
+
+    const xStart = Math.floor(v.xMin / step) * step;
+    const xEnd = Math.ceil(v.xMax / step) * step;
+    const yStart = Math.floor(v.yMin / step) * step;
+    const yEnd = Math.ceil(v.yMax / step) * step;
+
+    for (let x = xStart; x <= xEnd; x += step) {
+        const { px } = worldToCanvasFor(exportCanvas, x, 0);
+        exportCtx.beginPath();
+        exportCtx.moveTo(px, 0);
+        exportCtx.lineTo(px, exportCanvas.height);
+        exportCtx.stroke();
+    }
+
+    for (let y = yStart; y <= yEnd; y += step) {
+        const { py } = worldToCanvasFor(exportCanvas, 0, y);
+        exportCtx.beginPath();
+        exportCtx.moveTo(0, py);
+        exportCtx.lineTo(exportCanvas.width, py);
+        exportCtx.stroke();
+    }
+
+    exportCtx.restore();
+}
+
+function drawExportPoints(exportCtx, exportCanvas, points) {
+    exportCtx.save();
+    exportCtx.fillStyle = "rgba(15, 23, 42, 0.95)";
+
+    for (const p of points) {
+        const { px, py } = worldToCanvasFor(exportCanvas, p.x, p.y);
+
+        if (px < 0 || py < 0 || px >= exportCanvas.width || py >= exportCanvas.height) {
+            continue;
+        }
+
+        exportCtx.fillRect(px, py, 1, 1);
+    }
+
+    exportCtx.restore();
+}
+
+function exportAffinePNG() {
+    view2d.resizeToDisplay({ trigger: false });
+    regenerateIfNeeded();
+
+    const out = document.createElement("canvas");
+    out.width = canvas.width;
+    out.height = canvas.height;
+
+    const outCtx = out.getContext("2d");
+    outCtx.fillStyle = "#ffffff";
+    outCtx.fillRect(0, 0, out.width, out.height);
+
+    drawExportGrid(outCtx, out);
+    drawExportPoints(outCtx, out, cachedPoints);
+
+    exportCanvasPNG(out, "affine_ifs.png");
 }
 
 function drawStepPoints() {
@@ -1235,7 +1314,7 @@ UI.reset().addEventListener("click", () => {
 });
 
 UI.export().addEventListener("click", () =>{
-    exportCanvasPNG(canvas, "affine_ifs.png")
+    exportAffinePNG();
 });
 
 UI.clearSteps().addEventListener("click", () => { 
